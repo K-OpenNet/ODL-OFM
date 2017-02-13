@@ -35,6 +35,7 @@ import org.opendaylight.sfc.sfc_netconf.provider.api.SfcNetconfServiceFunctionAP
 import org.opendaylight.sfc.sfc_netconf.provider.api.SfcProviderSfDescriptionMonitorAPI;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SfName;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SffName;
+//import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SftTypeName;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SftType;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sf.rev140701.service.functions.ServiceFunction;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sff.rev140701.service.function.forwarders.ServiceFunctionForwarder;
@@ -167,7 +168,7 @@ public class SfcNetconfNodeDataListener extends SfcNetconfAbstractDataListener {
                                     LOG.error("SF type is empty");
                                     break;
                                 }
-                                SftTypeName sfType = new SftTypeName(type);
+                                SftType sfType = new SftType (type);
 //                                SftType sfType =
 //                                        SfcProviderServiceTypeAPI.readServiceFunctionType(new SftType(type)).getType();
                                 if (sfType == null) {
