@@ -24,8 +24,8 @@ import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sf.rev14070
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sff.rev140701.service.function.forwarders.ServiceFunctionForwarder;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sfc.rev140701.service.function.chain.grouping.ServiceFunctionChain;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sfp.rev140701.service.function.paths.ServiceFunctionPath;
-import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sl.rev140701.Nsh;
-import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sl.rev140701.Transport;
+//import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sl.rev140701.Nsh;
+//import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sl.rev140701.Transport;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sl.rev140701.VxlanGpe;
 import org.opendaylight.yang.gen.v1.urn.intel.params.xml.ns.yang.sfc.sfst.rev150312.*;
 import org.opendaylight.yangtools.yang.binding.DataContainer;
@@ -281,12 +281,12 @@ public class SfcHARenderedPathAPI {
 
         // If no encapsulation type specified, default is NSH for VxlanGpe and Transport
         // in any other case
-        renderedServicePathBuilder.setSfcEncapsulation(
-                serviceFunctionPath.getSfcEncapsulation() != null ?
-                        serviceFunctionPath.getSfcEncapsulation() :
-                        renderedServicePathBuilder.getTransportType().equals(VxlanGpe.class) ?
-                                Nsh.class :
-                                Transport.class);
+//        renderedServicePathBuilder.setSfcEncapsulation(VxlanGpe.class);
+//                serviceFunctionPath.getSfcEncapsulation() != null ?
+//                        serviceFunctionPath.getSfcEncapsulation() :
+//                        renderedServicePathBuilder.getTransportType().equals(VxlanGpe.class);
+//                                Nsh.class :
+//                                Transport.class);
 
         RenderedServicePathKey renderedServicePathKey =
                 new RenderedServicePathKey(renderedServicePathBuilder.getName());

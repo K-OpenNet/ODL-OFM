@@ -96,7 +96,7 @@ public class SfcHAMigrationAPI {
             // copy servingpath info to backupservicepath
             serviceFunctionPathBuilder.setName(serviceFunctionPath.getName())
                     .setKey(new ServiceFunctionPathKey(serviceFunctionPath.getName()))
-                    .setSfcEncapsulation(serviceFunctionPath.getSfcEncapsulation())
+//                    .setSfcEncapsulation(serviceFunctionPath.getSfcEncapsulation())
                     .setClassifier(serviceFunctionPath.getClassifier())
                     .setContextMetadata(serviceFunctionPath.getContextMetadata())
                     .setVariableMetadata(serviceFunctionPath.getVariableMetadata())
