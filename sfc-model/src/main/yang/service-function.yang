@@ -95,6 +95,12 @@ module service-function {
            locator";
       }
     }
+
+    leaf backup-sf {
+        type sfc-common:sf-name;
+        description
+         "The name of backup service function name for the service function.";
+    }
   }
 
   container service-functions {
@@ -160,6 +166,12 @@ module service-function {
         "A list of all service function paths that contain this
          service function";
       }
+
+      leaf backup-sf-selection {
+       type sfc-common:sf-name;
+       description
+       "The name of backup service function name for the service function.";
+       }
     }
   }
 
