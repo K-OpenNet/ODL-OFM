@@ -51,11 +51,11 @@ public class SfcHAmechanism {
 
          if (backupsfName != null) {
            ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupsfName);
-           SfcHAMigrationAPI.HAmigration (backupserviceFunction, serviceFunction, true);
+           SfcHAMigrationAPI.HAmigration (serviceFunction, backupserviceFunction, true);
          } else {
            backupsfName = selectBackupServiceFunction(serviceFunction);
            ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupsfName);
-           SfcHAMigrationAPI.HAmigration (backupserviceFunction, serviceFunction, true);
+           SfcHAMigrationAPI.HAmigration (serviceFunction, backupserviceFunction, true);
          }
     }
 
@@ -108,7 +108,7 @@ public class SfcHAmechanism {
                 output = GOOD;
             }
         }
-            LOG.debug("{} utilization : {}, backupSF : {}, backupSF : {}, policy1 :{}, policy2 :{}",sfName, CPUutil.intValue(), bsfName, bsfName_s, policy1, policy2);
+            LOG.info("result {} ==> {} utilization : {}, backupSF : {}, backupSF : {}, policy1 :{}, policy2 :{}",output, sfName, CPUutil.intValue(), bsfName, bsfName_s, policy1, policy2);
 
         return output;
     }
@@ -121,25 +121,25 @@ public class SfcHAmechanism {
             SfName sfName = serviceFunction.getName();
             ServiceFunctionType serviceFunctionType = SfcProviderServiceTypeAPI.readServiceFunctionType(serviceFunction.getType());
             List<SftServiceFunctionName> sftServiceFunctionNameList = serviceFunctionType.getSftServiceFunctionName();
+            LOG.info ("candidate sfs are{}", sftServiceFunctionNameList.size());
             SfName sfName_backup = null;
 
-            SfcSfDescMon sfcSfDescMon_origin = SfcProviderServiceFunctionAPI.readServiceFunctionDescriptionMonitor(sfName);
-            java.lang.Long preCPUUtilization = sfcSfDescMon_origin.getMonitoringInfo().getResourceUtilization().getCPUUtilization();
+            java.lang.Long preCPUUtilization = java.lang.Long.MAX_VALUE;
 
 
             // TODO As part of typedef refactor not message with SFTs
             for (SftServiceFunctionName curSftServiceFunctionName : sftServiceFunctionNameList) {
                 sfName_backup = new SfName(curSftServiceFunctionName.getName());
-
+                    LOG.info("Candidate SF {}", sfName_backup);
             /* Check next one if curSftServiceFunctionName doesn't exist */
-                ServiceFunction serviceFunction_backupsf = SfcProviderServiceFunctionAPI.readServiceFunction(sfName_backup);
+                ServiceFunction serviceFunction_backupsf = SfcProviderServiceFunctionAPI.readServiceFunction(new SfName (sfName_backup.getValue()));
                 if (serviceFunction_backupsf == null) {
-                    LOG.error("ServiceFunction {} doesn't exist or original ServiceFunction", sfName_backup);
+                    LOG.info("ServiceFunction {} doesn't exist or original ServiceFunction", sfName_backup);
                     continue;
                 }
 
             /* Read ServiceFunctionMonitor information */
-                SfcSfDescMon sfcSfDescMon = SfcProviderServiceFunctionAPI.readServiceFunctionDescriptionMonitor(sfName_backup);
+                SfcSfDescMon sfcSfDescMon = SfcProviderServiceFunctionAPI.readServiceFunctionDescriptionMonitor(new SfName (sfName_backup.getValue()));
                 if (sfcSfDescMon == null) {
                     // TODO As part of typedef refactor not message with SFTs
                     sftServiceFunctionName = sfName_backup;
@@ -158,11 +158,11 @@ public class SfcHAmechanism {
             }
 
            if (sftServiceFunctionName == null) {
-                LOG.error("There is not available Backup Service Function for {}", serviceFunctionType.getType());
+                LOG.info("There is not available Backup Service Function for {}", serviceFunctionType.getType());
 
             }
 
-              LOG.debug("The selected backup sf name : {}", sftServiceFunctionName.getValue());
+              LOG.info("The selected backup sf name : {}", sftServiceFunctionName.getValue());
               return sftServiceFunctionName;
 
 
@@ -210,14 +210,14 @@ class GetPredictionDynamicThread implements Runnable {
                     SfName backupSfName = SfcHAmechanism.selectBackupServiceFunction(serviceFunction);
                     SfcHAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
                     ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupSfName);
-                    SfcHAMigrationAPI.HAmigration (backupserviceFunction, serviceFunction, false);
+                    SfcHAMigrationAPI.HAmigration ( serviceFunction, backupserviceFunction, false);
                     break;
                 }
 
                 case MIGRATION : {
                     SfName backupSfName = SfcHAServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
                     ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupSfName);
-                    SfcHAMigrationAPI.HAmigration (backupserviceFunction, serviceFunction, false);
+                    SfcHAMigrationAPI.HAmigration (serviceFunction, backupserviceFunction, false);
                     break;
                 }
                 case DELETESF : {

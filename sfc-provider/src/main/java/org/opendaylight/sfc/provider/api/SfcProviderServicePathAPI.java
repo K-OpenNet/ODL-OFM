@@ -159,4 +159,22 @@ public class SfcProviderServicePathAPI {
         printTraceStop(LOG);
         return ret;
     }
+
+    public static boolean deleteServiceFunctionPath(ServiceFunctionPath sfp) {
+        boolean ret = false;
+        printTraceStart(LOG);
+
+        InstanceIdentifier<ServiceFunctionPath> sfpEntryIID = InstanceIdentifier.builder(ServiceFunctionPaths.class)
+            .child(ServiceFunctionPath.class, sfp.getKey())
+            .build();
+
+        if (SfcDataStoreAPI.deleteTransactionAPI(sfpEntryIID, LogicalDatastoreType.CONFIGURATION)) {
+            ret = true;
+        } else {
+            LOG.error("Failed to delete Service Function Path: {}", sfp.getName());
+        }
+
+        printTraceStop(LOG);
+        return ret;
+    }
 }
