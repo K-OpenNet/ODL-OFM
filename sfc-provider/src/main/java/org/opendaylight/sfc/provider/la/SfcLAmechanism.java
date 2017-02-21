@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sfc.provider.ha;
+package org.opendaylight.sfc.provider.la;
 
 import java.util.List;
 
@@ -25,7 +25,7 @@ import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStop;
 /**
  * Created by BOO on 2017-01-31.
  */
-public class SfcHAmechanism {
+public class SfcLAmechanism {
 
     private static final Logger LOG = LoggerFactory.getLogger(SfcHAmechanism.class);
 
@@ -35,7 +35,7 @@ public class SfcHAmechanism {
     private static final String MIGRATION= "migration";
     private static final String DELETESF= "delete-backupSF";
 
-    public static void SfcFailoverPrediction (SfName sfName) {
+    public static void SfcOverloadMechanism (SfName sfName) {
 
         GetPredictionDynamicThread PredictionSFDynamicThread = new GetPredictionDynamicThread(sfName.getValue());
         Thread thread = new Thread(PredictionSFDynamicThread);
@@ -43,26 +43,26 @@ public class SfcHAmechanism {
 
     }
 
-    public static void SfcFailover (SfName sfName) {
+    public static void sfcFailureMechanism (SfName sfName) {
 
          ServiceFunction serviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(sfName);
          SfName backupsfName = null;
          backupsfName = serviceFunction.getBackupSf();
+         List <SfName> backupSfNameList = new ArrayList<>();
 
          if (backupsfName != null) {
-           ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupsfName);
-           SfcHAMigrationAPI.HAmigration (serviceFunction, backupserviceFunction, true);
+           backupSfNameList.add(backupsfName);
+           SfcHAMigrationAPI.failurePathMigration(serviceFunction, backupSfNameList);
          } else {
-           backupsfName = selectBackupServiceFunction(serviceFunction);
-           ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupsfName);
-           SfcHAMigrationAPI.HAmigration (serviceFunction, backupserviceFunction, true);
+           backupSfNameList = selectBackupServiceFunction(serviceFunction);
+           SfcHAMigrationAPI.failurePathMigration (serviceFunction, backupSfNameList);
          }
     }
 
     // policy driven
     // input : ServiceFunction serviceFunction, policy 1, policy 2, boolean failover
     // output is one of good, selection, selection-migration, migration;
-    public static String predictionSf(ServiceFunction serviceFunction, int policy1, int policy2) {
+    public static String predictionSfState(ServiceFunction serviceFunction, int policy1, int policy2) {
         // bsfName was allocated backup SF name when SF is created
         // bsfName_s is selection backup SF when allocated backup SF isn't
         String output = null;
@@ -115,17 +115,16 @@ public class SfcHAmechanism {
 
 
     // selection function for backup-sf
-    public static SfName selectBackupServiceFunction(ServiceFunction serviceFunction) {
+    public static List <SfName> selectBackupServiceFunction(ServiceFunction serviceFunction) {
 
             SfName sftServiceFunctionName = null;
             SfName sfName = serviceFunction.getName();
             ServiceFunctionType serviceFunctionType = SfcProviderServiceTypeAPI.readServiceFunctionType(serviceFunction.getType());
             List<SftServiceFunctionName> sftServiceFunctionNameList = serviceFunctionType.getSftServiceFunctionName();
             LOG.info ("candidate sfs are{}", sftServiceFunctionNameList.size());
-            SfName sfName_backup = null;
+            List <SfName> backupSfNameList = new ArraryList<>;
 
             java.lang.Long preCPUUtilization = java.lang.Long.MAX_VALUE;
-
 
             // TODO As part of typedef refactor not message with SFTs
             for (SftServiceFunctionName curSftServiceFunctionName : sftServiceFunctionNameList) {
@@ -161,11 +160,10 @@ public class SfcHAmechanism {
                 LOG.info("There is not available Backup Service Function for {}", serviceFunctionType.getType());
 
             }
-
               LOG.info("The selected backup sf name : {}", sftServiceFunctionName.getValue());
-              return sftServiceFunctionName;
 
-
+              backupSfNameList.add (sftServiceFunctionName);
+              return backupSfNameList;
     }
 }
 
@@ -193,31 +191,34 @@ class GetPredictionDynamicThread implements Runnable {
             printTraceStart(LOG);
             SfName sfNodeName = new SfName(nodeName);
             ServiceFunction serviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(sfNodeName);
-
-            String prediction_state = SfcHAmechanism.predictionSf(serviceFunction, policy1, policy2);
+            String prediction_state = SfcHAmechanism.predictionSfState(serviceFunction, policy1, policy2);
             switch (prediction_state) {
                 case GOOD : {
                     break;
                 }
 
                 case SELECTION : {
-                    SfName backupSfName = SfcHAmechanism.selectBackupServiceFunction(serviceFunction);
+                    List <SfName> backupSfNameList = SfcHAmechanism.selectBackupServiceFunction(serviceFunction);
+                    SfName backupSfName = backupSfNameList.get(0);
                     SfcHAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
                     break;
                 }
 
                 case SELECTIONMIGRATION : {
-                    SfName backupSfName = SfcHAmechanism.selectBackupServiceFunction(serviceFunction);
+                    List <SfName> backupSfNameList = SfcHAmechanism.selectBackupServiceFunction(serviceFunction);
+                    SfName backupSfName = backupSfNameList.get(0);
                     SfcHAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
-                    ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupSfName);
-                    SfcHAMigrationAPI.HAmigration ( serviceFunction, backupserviceFunction, false);
+                    List <SfNme> backupSfList = new ArrayList<>;
+                    backupSfList.add(backupSfName);
+                    SfcHAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
                     break;
                 }
 
                 case MIGRATION : {
                     SfName backupSfName = SfcHAServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
-                    ServiceFunction backupserviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(backupSfName);
-                    SfcHAMigrationAPI.HAmigration (serviceFunction, backupserviceFunction, false);
+                    List <SfNme> backupSfList = new ArrayList<>;
+                    backupSfList.add(backupSfName);
+                    SfcHAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
                     break;
                 }
                 case DELETESF : {
