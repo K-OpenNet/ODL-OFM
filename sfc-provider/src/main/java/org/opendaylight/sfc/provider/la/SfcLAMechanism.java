@@ -9,7 +9,7 @@
 package org.opendaylight.sfc.provider.la;
 
 import java.util.List;
-
+import java.util.ArrayList;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceFunctionAPI;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceTypeAPI;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SfName;
@@ -22,12 +22,14 @@ import org.slf4j.LoggerFactory;
 import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStart;
 import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStop;
 
+
+
 /**
  * Created by BOO on 2017-01-31.
  */
-public class SfcLAmechanism {
+public class SfcLAMechanism {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcHAmechanism.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcLAMechanism.class);
 
     private static final String GOOD = "good";
     private static final String SELECTION = "selection";
@@ -52,10 +54,10 @@ public class SfcLAmechanism {
 
          if (backupsfName != null) {
            backupSfNameList.add(backupsfName);
-           SfcHAMigrationAPI.failurePathMigration(serviceFunction, backupSfNameList);
+           SfcLAMigrationAPI.failurePathMigration(serviceFunction, backupSfNameList);
          } else {
            backupSfNameList = selectBackupServiceFunction(serviceFunction);
-           SfcHAMigrationAPI.failurePathMigration (serviceFunction, backupSfNameList);
+           SfcLAMigrationAPI.failurePathMigration (serviceFunction, backupSfNameList);
          }
     }
 
@@ -68,7 +70,7 @@ public class SfcLAmechanism {
         String output = null;
         SfName sfName = serviceFunction.getName();
         SfName bsfName = serviceFunction.getBackupSf();
-        SfName bsfName_s = SfcHAServiceFunctionAPI.readBackupServiceFunction(sfName);
+        SfName bsfName_s = SfcLAServiceFunctionAPI.readBackupServiceFunction(sfName);
 
         /* Read ServiceFunctionMonitor information */
         SfcSfDescMon sfcSfDescMon = SfcProviderServiceFunctionAPI.readServiceFunctionDescriptionMonitor(sfName);
@@ -122,13 +124,13 @@ public class SfcLAmechanism {
             ServiceFunctionType serviceFunctionType = SfcProviderServiceTypeAPI.readServiceFunctionType(serviceFunction.getType());
             List<SftServiceFunctionName> sftServiceFunctionNameList = serviceFunctionType.getSftServiceFunctionName();
             LOG.info ("candidate sfs are{}", sftServiceFunctionNameList.size());
-            List <SfName> backupSfNameList = new ArraryList<>;
+            List <SfName> backupSfNameList = new ArrayList<>();
 
             java.lang.Long preCPUUtilization = java.lang.Long.MAX_VALUE;
 
             // TODO As part of typedef refactor not message with SFTs
             for (SftServiceFunctionName curSftServiceFunctionName : sftServiceFunctionNameList) {
-                sfName_backup = new SfName(curSftServiceFunctionName.getName());
+                SfName sfName_backup = new SfName(curSftServiceFunctionName.getName());
                     LOG.info("Candidate SF {}", sfName_backup);
             /* Check next one if curSftServiceFunctionName doesn't exist */
                 ServiceFunction serviceFunction_backupsf = SfcProviderServiceFunctionAPI.readServiceFunction(new SfName (sfName_backup.getValue()));
@@ -191,39 +193,39 @@ class GetPredictionDynamicThread implements Runnable {
             printTraceStart(LOG);
             SfName sfNodeName = new SfName(nodeName);
             ServiceFunction serviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(sfNodeName);
-            String prediction_state = SfcHAmechanism.predictionSfState(serviceFunction, policy1, policy2);
+            String prediction_state = SfcLAMechanism.predictionSfState(serviceFunction, policy1, policy2);
             switch (prediction_state) {
                 case GOOD : {
                     break;
                 }
 
                 case SELECTION : {
-                    List <SfName> backupSfNameList = SfcHAmechanism.selectBackupServiceFunction(serviceFunction);
+                    List <SfName> backupSfNameList = SfcLAMechanism.selectBackupServiceFunction(serviceFunction);
                     SfName backupSfName = backupSfNameList.get(0);
-                    SfcHAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
+                    SfcLAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
                     break;
                 }
 
                 case SELECTIONMIGRATION : {
-                    List <SfName> backupSfNameList = SfcHAmechanism.selectBackupServiceFunction(serviceFunction);
+                    List <SfName> backupSfNameList = SfcLAMechanism.selectBackupServiceFunction(serviceFunction);
                     SfName backupSfName = backupSfNameList.get(0);
-                    SfcHAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
-                    List <SfNme> backupSfList = new ArrayList<>;
+                    SfcLAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
+                    List <SfName> backupSfList = new ArrayList<>();
                     backupSfList.add(backupSfName);
-                    SfcHAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
+                    SfcLAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
                     break;
                 }
 
                 case MIGRATION : {
-                    SfName backupSfName = SfcHAServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
-                    List <SfNme> backupSfList = new ArrayList<>;
+                    SfName backupSfName = SfcLAServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
+                    List <SfName> backupSfList = new ArrayList<>();
                     backupSfList.add(backupSfName);
-                    SfcHAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
+                    SfcLAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
                     break;
                 }
                 case DELETESF : {
                     SfName backupSfName = new SfName ("old");
-                    SfcHAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
+                    SfcLAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
                 }
                 default: {
                     break;

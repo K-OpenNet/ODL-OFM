@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
  */
 
 
-public class SfcHAServiceFunctionAPI {
+public class SfcLAServiceFunctionAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcHAServiceFunctionAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcLAServiceFunctionAPI.class);
 
     public static boolean mergeBackupSfSelection(SfName backupsfName, SfName sfName) {
 

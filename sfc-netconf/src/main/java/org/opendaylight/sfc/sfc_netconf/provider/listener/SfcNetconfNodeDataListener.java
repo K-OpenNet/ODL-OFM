@@ -28,7 +28,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sfc.provider.OpendaylightSfc;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceForwarderAPI;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceFunctionAPI;
-import org.opendaylight.sfc.provider.la.SfcHAmechanism;
+import org.opendaylight.sfc.provider.la.SfcLAMechanism;
 //import org.opendaylight.sfc.provider.api.SfcProviderServiceTypeAPI;
 import org.opendaylight.sfc.sfc_netconf.provider.api.SfcNetconfServiceForwarderAPI;
 import org.opendaylight.sfc.sfc_netconf.provider.api.SfcNetconfServiceFunctionAPI;
@@ -194,7 +194,7 @@ public class SfcNetconfNodeDataListener extends SfcNetconfAbstractDataListener {
                                         new GetSfDescriptionMonitoringInfoDynamicThread(nodeName);
                                 Thread thread = new Thread(sfDescriptionMonitoringInfoDynamicThread);
                                 thread.start();
-                                SfcHAmechanism.SfcFailoverPrediction(new SfName(nodeName));
+                                SfcLAMechanism.SfcOverloadMechanism(new SfName(nodeName));
 
                             } else { // SFF
                                 ServiceFunctionForwarder sff =
@@ -276,7 +276,7 @@ class GetSfDescriptionMonitoringInfoDynamicThread implements Runnable {
                 SfcNetconfServiceFunctionAPI.putServiceFunctionMonitor(monInfo, sfNodeName);
             } else {
                 SfName sfNodeName = new SfName(nodeName);
-                SfcHAmechanism.sfcFailureMechanism(sfNodeName);
+                SfcLAMechanism.sfcFailureMechanism(sfNodeName);
             }
             try {
                 Thread.sleep(5000);

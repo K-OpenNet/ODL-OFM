@@ -41,15 +41,15 @@ import java.util.List;
  */
 public class SfcLAMigrationAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcHAMigrationAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcLAMigrationAPI.class);
 
     //TODO we should defince migration modules witch one is for failure and other is for overload
     public static void failurePathMigration(ServiceFunction serviceFunction, List <SfName> backupSfNameList) {
 
+        SfName oldSfName = serviceFunction.getName();
         List <SfServicePath> sfServicePathList = new ArrayList<>();
         sfServicePathList = SfcProviderServiceFunctionAPI.readServiceFunctionState(oldSfName);
         List <RspName> RspList = new ArrayList<>();
-        SfName oldSfName = serviceFunction.getName();
         List <RenderedServicePath> renderedServicePathList = new ArrayList<>();
         List <SfName> sfNameList = new ArrayList<>();
         int n_bakupSf = backupSfNameList.size();
@@ -83,17 +83,16 @@ public class SfcLAMigrationAPI {
             createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
             CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
             ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
-            renderedServicePathList.add(SfcHARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
+            renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
         }
     }
 
-    public static void overloadPathMigration(ServiceFunction serviceFunction, List <SfNmae> backupSfNameList) {
+    public static void overloadPathMigration(ServiceFunction serviceFunction, List <SfName> backupSfNameList) {
 
-
+         SfName oldSfName = serviceFunction.getName();
          List <SfServicePath> sfServicePathList_all = SfcProviderServiceFunctionAPI.readServiceFunctionState(oldSfName);
          List <SfServicePath> sfServicePathList = new ArrayList<>();
          List <RspName> RspList = new ArrayList<>();
-         SfName oldSfName = serviceFunction.getName();
          List <RenderedServicePath> renderedServicePathList = new ArrayList<>();
          boolean ret = false;
          int n_backupSf = backupSfNameList.size();
@@ -130,7 +129,7 @@ public class SfcLAMigrationAPI {
                createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
                CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
                ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
-               renderedServicePathList.add(SfcHARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
+               renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
         }
    }
 }

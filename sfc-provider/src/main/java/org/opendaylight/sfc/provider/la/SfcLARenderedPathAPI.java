@@ -51,9 +51,9 @@ import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStop;
  *
  * @since 2017-02-04
  */
-public class SfcHARenderedPathAPI {
+public class SfcLARenderedPathAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcHARenderedPathAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcLARenderedPathAPI.class);
     private static final int MAX_STARTING_INDEX = 255;
 
     /**
@@ -76,7 +76,7 @@ public class SfcHARenderedPathAPI {
 
 
         // Create RSP
-        if ((renderedServicePath = SfcHARenderedPathAPI.createfailoverRenderedServicePathEntry(createdServiceFunctionPath,
+        if ((renderedServicePath = SfcLARenderedPathAPI.createfailoverRenderedServicePathEntry(createdServiceFunctionPath,
                 createRenderedPathInput, sfNameList)) != null) {
             rspSuccessful = true;
 

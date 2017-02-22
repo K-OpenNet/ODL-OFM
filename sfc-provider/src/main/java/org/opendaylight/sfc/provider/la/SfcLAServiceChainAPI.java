@@ -38,9 +38,9 @@ import java.util.List;
  *
  * @author Jaewook Lee (iioiioiio12345@gmail.com)
  */
-public class SfcHAServiceChainAPI {
+public class SfcLAServiceChainAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcHAServiceChainAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcLAServiceChainAPI.class);
     //delete sfp
     public static boolean  deleteSFPtoServiceFunctionChainState(SfcName sfcName) {
         boolean ret = false;
