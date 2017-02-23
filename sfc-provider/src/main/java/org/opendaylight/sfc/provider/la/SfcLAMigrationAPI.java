@@ -46,44 +46,71 @@ public class SfcLAMigrationAPI {
     //TODO we should defince migration modules witch one is for failure and other is for overload
     public static void failurePathMigration(ServiceFunction serviceFunction, List <SfName> backupSfNameList) {
 
-        SfName oldSfName = serviceFunction.getName();
-        List <SfServicePath> sfServicePathList = new ArrayList<>();
-        sfServicePathList = SfcProviderServiceFunctionAPI.readServiceFunctionState(oldSfName);
         List <RspName> RspList = new ArrayList<>();
         List <RenderedServicePath> renderedServicePathList = new ArrayList<>();
         List <SfName> sfNameList = new ArrayList<>();
         int n_bakupSf = backupSfNameList.size();
-        int n_Sfp = sfServicePathList.size();
         boolean ret = false;
 
-        LOG.info(" sf : {} and {} sfps are failure.",oldSfName.getValue(), n_Sfp);
+        // Read all RSPs which are allocated into failure service function
+        SfName oldSfName = serviceFunction.getName();
+        List <SfServicePath> sfServicePathList = new ArrayList<>();
+        sfServicePathList = SfcProviderServiceFunctionAPI.readServiceFunctionState(oldSfName);
+        int n_Sfp = sfServicePathList.size();
 
-        for (SfServicePath sFPath : sfServicePathList) {
-            //TODO : Modify to loadbalancing
-            SfName backupSfName = backupSfNameList.get(0);
+        if (n_Sfp == 0) {
 
-            RspName rspName = new RspName (sFPath.getName().getValue());
-            LOG.info(" The RSP {} is allocated to SFP {}", rspName, sFPath.getName());
+            LOG.info(" There is no SFP allocated into failure SF : {},",oldSfName.getValue());
 
-            RenderedServicePath renderedServicePath =SfcProviderRenderedPathAPI.readRenderedServicePath(new RspName (rspName.getValue()));
-            List<RenderedServicePathHop> renderedServicePathHopList = renderedServicePath.getRenderedServicePathHop();
+        } else {
+            LOG.info(" sf : {} and {} SFPs are failure.",oldSfName.getValue(), n_Sfp);
 
-            sfNameList = new ArrayList<>();
-            for (RenderedServicePathHop renderedServicePathHop : renderedServicePathHopList) {
-                SfName SfcSfName = new SfName (renderedServicePathHop.getServiceFunctionName().getValue());
-                if (SfcSfName.getValue() ==  oldSfName.getValue()) {
-                    SfcSfName = new SfName(backupSfName.getValue());
+            for (SfServicePath sFPath : sfServicePathList) {
+                //TODO : Modify to loadbalancing
+
+                SfName backupSfName = backupSfNameList.get(0);
+                RspName rspName = new RspName (sFPath.getName().getValue());
+                LOG.info("The RSP {} which is allocated to SFP {} should be migrated to new RSP", rspName, sFPath.getName());
+
+                RenderedServicePath renderedServicePath =SfcProviderRenderedPathAPI.readRenderedServicePath(new RspName (rspName.getValue()));
+                List<RenderedServicePathHop> renderedServicePathHopList = renderedServicePath.getRenderedServicePathHop();
+                // Create new RSP instance
+                sfNameList = new ArrayList<>();
+                for (RenderedServicePathHop renderedServicePathHop : renderedServicePathHopList) {
+                    SfName SfcSfName = new SfName (renderedServicePathHop.getServiceFunctionName().getValue());
+                    if (SfcSfName.getValue() ==  oldSfName.getValue()) {
+                        SfcSfName = new SfName(backupSfName.getValue());
+                    }
+                    sfNameList.add(SfcSfName);
+                    LOG.info ("SF for chain is {} ", SfcSfName);
                 }
-                sfNameList.add(SfcSfName);
-                LOG.info ("SF for chain is {} ", SfcSfName);
+
+                ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
+                if (ret == false) {
+                    LOG.info("Old RSP is not deleted at RSP DB");
+                } else {
+                    LOG.info("Old RSP is deleted at RSP DB");
+                }
+                ret = SfcProviderServiceFunctionAPI.deleteServicePathFromServiceFunctionState(new SfpName (sFPath.getName().getValue()));
+                if (ret == false) {
+                    LOG.info("Old RSP is not deleted at SF DB");
+                } else {
+                    LOG.info("Old RSP is deleted at SF DB");
+                }
+                ret = SfcProviderServiceForwarderAPI.deletePathFromServiceForwarderState(rspName);
+                if (ret == false) {
+                    LOG.info("Old RSP is not deleted at SFF DB");
+                } else {
+                    LOG.info("Old RSP is deleted at SFF DB");
+                }
+
+                CreateRenderedPathInputBuilder createRenderedPathInputBuilder = new CreateRenderedPathInputBuilder();
+                createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
+                CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
+                ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
+                renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
             }
 
-            ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
-            CreateRenderedPathInputBuilder createRenderedPathInputBuilder = new CreateRenderedPathInputBuilder();
-            createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
-            CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
-            ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
-            renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
         }
     }
 
@@ -99,38 +126,60 @@ public class SfcLAMigrationAPI {
          int n_sfp = sfServicePathList_all.size();
 
          List <SfName> sfNameList = new ArrayList<>();
-         LOG.info(" sf : {} and {} sfp are overloading ", oldSfName.getValue(), n_sfp);
+         if (n_sfc == 0) {
+             LOG.info(" SF : {} is overloading but there is no SFP", oldSfName.getValue(), n_sfp);
+         } else {
+             LOG.info(" SF : {} and {} SFP are overloading ", oldSfName.getValue(), n_sfp);
+             for (int ii = 0 ; ii < Math.round(n_sfp/2) ; ii++) {
+                 sfServicePathList.add (sfServicePathList_all.get(ii));
+             }
 
-         for (int ii = 0 ; ii < Math.round(n_sfp/2) ; ii++) {
-             sfServicePathList.add (sfServicePathList_all.get(ii));
-          }
+             for (SfServicePath sFPath : sfServicePathList) {
+                 SfName backupSfName = backupSfNameList.get(0);
 
-        for (SfServicePath sFPath : sfServicePathList) {
-            SfName backupSfName = backupSfNameList.get(0);
+                 RspName rspName = new RspName (sFPath.getName().getValue());
+                 LOG.info(" The RSP {} is allocated to SFP {}", rspName, sFPath.getName());
 
-            RspName rspName = new RspName (sFPath.getName().getValue());
-            LOG.info(" The RSP {} is allocated to SFP {}", rspName, sFPath.getName());
+                 RenderedServicePath renderedServicePath =SfcProviderRenderedPathAPI.readRenderedServicePath(new RspName (rspName.getValue()));
+                 List<RenderedServicePathHop> renderedServicePathHopList = renderedServicePath.getRenderedServicePathHop();
+                 sfNameList = new ArrayList<>();
 
-            RenderedServicePath renderedServicePath =SfcProviderRenderedPathAPI.readRenderedServicePath(new RspName (rspName.getValue()));
-            List<RenderedServicePathHop> renderedServicePathHopList = renderedServicePath.getRenderedServicePathHop();
-            sfNameList = new ArrayList<>();
+                 for (RenderedServicePathHop renderedServicePathHop : renderedServicePathHopList) {
+                     SfName SfcSfName = new SfName (renderedServicePathHop.getServiceFunctionName().getValue());
+                     if (SfcSfName.getValue() ==  oldSfName.getValue()) {
+                         SfcSfName = new SfName(backupSfName.getValue());
+                     }
+                     sfNameList.add(SfcSfName);
+                     LOG.info ("SF for chain is {} ", SfcSfName);
+                 }
 
-            for (RenderedServicePathHop renderedServicePathHop : renderedServicePathHopList) {
-                SfName SfcSfName = new SfName (renderedServicePathHop.getServiceFunctionName().getValue());
-                if (SfcSfName.getValue() ==  oldSfName.getValue()) {
-                   SfcSfName = new SfName(backupSfName.getValue());
-                }
-                sfNameList.add(SfcSfName);
-                LOG.info ("SF for chain is {} ", SfcSfName);
-               }
+                 ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
+                 if (ret == false) {
+                     LOG.info("Old RSP is not deleted at RSP DB");
+                 } else {
+                     LOG.info("Old RSP is deleted at RSP DB");
+                 }
+                 ret = SfcProviderServiceFunctionAPI.deleteServicePathFromServiceFunctionState(new SfpName (sFPath.getName().getValue()));
+                 if (ret == false) {
+                     LOG.info("Old RSP is not deleted at SF DB");
+                 } else {
+                     LOG.info("Old RSP is deleted at SF DB");
+                 }
+                 ret = SfcProviderServiceForwarderAPI.deletePathFromServiceForwarderState(rspName);
+                 if (ret == false) {
+                     LOG.info("Old RSP is not deleted at SFF DB");
+                 } else {
+                     LOG.info("Old RSP is deleted at SFF DB");
+                 }
+                 CreateRenderedPathInputBuilder createRenderedPathInputBuilder = new CreateRenderedPathInputBuilder();
+                 createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
+                 CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
+                 ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
+                 renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
+             }
+         }
 
-               ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
-               CreateRenderedPathInputBuilder createRenderedPathInputBuilder = new CreateRenderedPathInputBuilder();
-               createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
-               CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
-               ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
-               renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
-        }
+
    }
 }
 
