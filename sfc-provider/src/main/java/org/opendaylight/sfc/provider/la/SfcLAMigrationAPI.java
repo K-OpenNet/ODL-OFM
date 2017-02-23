@@ -63,7 +63,7 @@ public class SfcLAMigrationAPI {
             LOG.info(" There is no SFP allocated into failure SF : {},",oldSfName.getValue());
 
         } else {
-            LOG.info(" sf : {} and {} SFPs are failure.",oldSfName.getValue(), n_Sfp);
+            LOG.info(" SF  {} and {} SFPs are failure.",oldSfName.getValue(), n_Sfp);
 
             for (SfServicePath sFPath : sfServicePathList) {
                 //TODO : Modify to loadbalancing
@@ -85,12 +85,7 @@ public class SfcLAMigrationAPI {
                     LOG.info ("SF for chain is {} ", SfcSfName);
                 }
 
-                ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
-                if (ret == false) {
-                    LOG.info("Old RSP is not deleted at RSP DB");
-                } else {
-                    LOG.info("Old RSP is deleted at RSP DB");
-                }
+
                 ret = SfcProviderServiceFunctionAPI.deleteServicePathFromServiceFunctionState(new SfpName (sFPath.getName().getValue()));
                 if (ret == false) {
                     LOG.info("Old RSP is not deleted at SF DB");
@@ -102,6 +97,12 @@ public class SfcLAMigrationAPI {
                     LOG.info("Old RSP is not deleted at SFF DB");
                 } else {
                     LOG.info("Old RSP is deleted at SFF DB");
+                }
+                ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
+                if (ret == false) {
+                    LOG.info("Old RSP is not deleted at RSP DB");
+                } else {
+                    LOG.info("Old RSP is deleted at RSP DB");
                 }
 
                 CreateRenderedPathInputBuilder createRenderedPathInputBuilder = new CreateRenderedPathInputBuilder();
@@ -126,14 +127,14 @@ public class SfcLAMigrationAPI {
          int n_sfp = sfServicePathList_all.size();
 
          List <SfName> sfNameList = new ArrayList<>();
-         if (n_sfc == 0) {
+         if (n_sfp == 0) {
              LOG.info(" SF : {} is overloading but there is no SFP", oldSfName.getValue(), n_sfp);
          } else {
              LOG.info(" SF : {} and {} SFP are overloading ", oldSfName.getValue(), n_sfp);
-             for (int ii = 0 ; ii < Math.round(n_sfp/2) ; ii++) {
+             for (int ii = 0 ; ii < n_sfp ; ii++) {
                  sfServicePathList.add (sfServicePathList_all.get(ii));
              }
-
+            LOG.info(" Migration {} RSP of {} RSP", sfServicePathList.size(), n_sfp );
              for (SfServicePath sFPath : sfServicePathList) {
                  SfName backupSfName = backupSfNameList.get(0);
 
@@ -153,12 +154,7 @@ public class SfcLAMigrationAPI {
                      LOG.info ("SF for chain is {} ", SfcSfName);
                  }
 
-                 ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
-                 if (ret == false) {
-                     LOG.info("Old RSP is not deleted at RSP DB");
-                 } else {
-                     LOG.info("Old RSP is deleted at RSP DB");
-                 }
+
                  ret = SfcProviderServiceFunctionAPI.deleteServicePathFromServiceFunctionState(new SfpName (sFPath.getName().getValue()));
                  if (ret == false) {
                      LOG.info("Old RSP is not deleted at SF DB");
@@ -171,6 +167,13 @@ public class SfcLAMigrationAPI {
                  } else {
                      LOG.info("Old RSP is deleted at SFF DB");
                  }
+                ret = SfcProviderRenderedPathAPI.deleteRenderedServicePath(rspName);
+                if (ret == false) {
+                    LOG.info("Old RSP is not deleted at RSP DB");
+                } else {
+                    LOG.info("Old RSP is deleted at RSP DB");
+                }
+
                  CreateRenderedPathInputBuilder createRenderedPathInputBuilder = new CreateRenderedPathInputBuilder();
                  createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
                  CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();

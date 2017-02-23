@@ -110,7 +110,7 @@ public class SfcLAMechanism {
                 output = GOOD;
             }
         }
-            LOG.info("SF {} is in state : {} ( CPU utilization : {}, backupSF : {}, backupSF : {}, selection threshold : {}, migration threshold :{})", sfName, output, CPUutil.intValue(), bsfName, bsfName_s, policy1, policy2);
+            LOG.info("SF {} is in state : {} ( CPU utilization : {}, backupSF : {}, backupSF : {}, selection threshold : {}, migration threshold :{})", sfName.getValue(), output, CPUutil.intValue(), bsfName, bsfName_s, policy1, policy2);
 
         return output;
     }
@@ -128,8 +128,8 @@ public class SfcLAMechanism {
 
             SfcSfDescMon sfcSfDescMon1 = SfcProviderServiceFunctionAPI.readServiceFunctionDescriptionMonitor(sfName);
             java.lang.Long preCPUUtilization = java.lang.Long.MAX_VALUE;
-            if (sfcSfDescMon != null && failure == false) {
-                preCPUUtilization = sfcSfDescMon.getMonitoringInfo().getResourceUtilization().getCPUUtilization();
+            if (sfcSfDescMon1 != null && failure == false) {
+                preCPUUtilization = sfcSfDescMon1.getMonitoringInfo().getResourceUtilization().getCPUUtilization();
             }
 
             List <java.lang.Long> CPUUtilizationList = new ArrayList<>();
