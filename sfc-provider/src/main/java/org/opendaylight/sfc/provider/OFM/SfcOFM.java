@@ -9,7 +9,6 @@
 package org.opendaylight.sfc.provider.OFM;
 
 import java.util.List;
-import java.util.ArrayList;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceFunctionAPI;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceTypeAPI;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SfName;
@@ -154,7 +153,7 @@ public class SfcOFM {
                     }
                 }
 
-           if (backupSfNameList.size() == 0) {
+           if (temporaryBackupSfName == null) {
                 LOG.info("There is not available Backup SF for {}", serviceFunctionType.getType());
 
             }
@@ -166,7 +165,7 @@ public class SfcOFM {
 
 class GetSFDynamicOMThread implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GetPredictionDynamicThread.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GetSFDynamicOMThread.class);
     private int ticket = 10;
     private String nodeName;
     int policy1 = 80;
@@ -208,10 +207,11 @@ class GetSFDynamicOMThread implements Runnable {
                 }
 
                 case MIGRATION : {
+                       SfName backupSfName = null;
                     if (serviceFunction.getBackupSf() != null) {
-                        SfName  backupSfName = serviceFunction.getBackupSf();
+                        backupSfName = serviceFunction.getBackupSf();
                     } else {
-                        SfName  backupSfName = SfcOFMServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
+                        backupSfName = SfcOFMServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
                     }
                         SfcOFMMigrationAPI.overloadPathMigration( serviceFunction, backupSfName);
                     break;

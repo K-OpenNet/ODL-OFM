@@ -122,7 +122,6 @@ public class SfcOFMMigrationAPI {
          List <RspName> RspList = new ArrayList<>();
          List <RenderedServicePath> renderedServicePathList = new ArrayList<>();
          boolean ret = false;
-         int n_backupSf = backupSfNameList.size();
          int n_sfp = sfServicePathList_all.size();
 
          List <SfName> sfNameList = new ArrayList<>();
@@ -135,7 +134,6 @@ public class SfcOFMMigrationAPI {
              }
             LOG.info(" Migration {} RSP of {} RSP", sfServicePathList.size(), n_sfp );
              for (SfServicePath sFPath : sfServicePathList) {
-                 SfName backupSfName = backupSfNameList.get(0);
 
                  RspName rspName = new RspName (sFPath.getName().getValue());
                  LOG.info(" The RSP {} is allocated to SFP {}", rspName, sFPath.getName());
