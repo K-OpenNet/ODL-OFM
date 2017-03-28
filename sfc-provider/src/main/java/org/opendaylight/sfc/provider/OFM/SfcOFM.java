@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sfc.provider.la;
+package org.opendaylight.sfc.provider.OFM;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -27,9 +27,9 @@ import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStop;
 /**
  * Created by BOO on 2017-01-31.
  */
-public class SfcLAMechanism {
+public class SfcOFM {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcLAMechanism.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcOFM.class);
 
     private static final String GOOD = "good";
     private static final String SELECTION = "selection";
@@ -37,40 +37,38 @@ public class SfcLAMechanism {
     private static final String MIGRATION= "migration";
     private static final String DELETESF= "delete-backupSF";
 
-    public static void SfcOverloadMechanism (SfName sfName) {
+    public static void SfcOverloadManagement (SfName sfName) {
 
-        GetPredictionDynamicThread PredictionSFDynamicThread = new GetPredictionDynamicThread(sfName.getValue());
-        Thread thread = new Thread(PredictionSFDynamicThread);
+        GetSFDynamicOMThread SFDynamicOMThread = new GetSFDynamicOMThread(sfName.getValue());
+        Thread thread = new Thread(SFDynamicOMThread);
         thread.start();
 
     }
 
-    public static void sfcFailureMechanism (SfName sfName) {
+    public static void SfcFailureManagement (SfName sfName) {
 
          ServiceFunction serviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(sfName);
-         SfName backupsfName = null;
-         backupsfName = serviceFunction.getBackupSf();
-         List <SfName> backupSfNameList = new ArrayList<>();
+         SfName permanentBackupSfName = null;
+         SfName temporaryBackupSfName = null;
 
-         if (backupsfName != null) {
-           backupSfNameList.add(backupsfName);
-           SfcLAMigrationAPI.failurePathMigration(serviceFunction, backupSfNameList);
+        permanentBackupSfName = serviceFunction.getBackupSf();
+
+         if (permanentBackupSfName != null) {
+           SfcOFMMigrationAPI.failurePathMigration(serviceFunction, permanentBackupSfName);
          } else {
-           backupSfNameList = selectBackupServiceFunction(serviceFunction, true);
-           SfcLAMigrationAPI.failurePathMigration (serviceFunction, backupSfNameList);
+             temporaryBackupSfName = selectBackupServiceFunction(serviceFunction, true);
+             SfcOFMMigrationAPI.failurePathMigration (serviceFunction, temporaryBackupSfName);
          }
     }
 
-    // policy driven
-    // input : ServiceFunction serviceFunction, policy 1, policy 2, boolean failover
-    // output is one of good, selection, selection-migration, migration;
-    public static String predictionSfState(ServiceFunction serviceFunction, int policy1, int policy2) {
+
+    public static String predictionSfState (ServiceFunction serviceFunction, int policy1, int policy2) {
         // bsfName was allocated backup SF name when SF is created
         // bsfName_s is selection backup SF when allocated backup SF isn't
         String output = null;
         SfName sfName = serviceFunction.getName();
-        SfName bsfName = serviceFunction.getBackupSf();
-        SfName bsfName_s = SfcLAServiceFunctionAPI.readBackupServiceFunction(sfName);
+        SfName permanentBackupSfName = serviceFunction.getBackupSf();
+        SfName temporaryBackupSfName = SfcOFMServiceFunctionAPI.readBackupServiceFunction(sfName);
 
         /* Read ServiceFunctionMonitor information */
         SfcSfDescMon sfcSfDescMon = SfcProviderServiceFunctionAPI.readServiceFunctionDescriptionMonitor(sfName);
@@ -80,8 +78,8 @@ public class SfcLAMechanism {
         java.lang.Long CPUutil = sfcSfDescMon.getMonitoringInfo().getResourceUtilization().getCPUUtilization();
 
         if (CPUutil.intValue() > policy2) {
-            if (bsfName == null) {
-                if (bsfName_s != null && bsfName_s.getValue() != "old") {
+            if (permanentBackupSfName == null) {
+                if (temporaryBackupSfName != null && temporaryBackupSfName.getValue() != "old") {
                     output = MIGRATION;
                 } else {
                     output = SELECTIONMIGRATION;
@@ -90,8 +88,8 @@ public class SfcLAMechanism {
                 output = MIGRATION;
             }
         } else if (CPUutil.intValue() > policy1 ) {
-            if (bsfName == null) {
-                if (bsfName_s != null && bsfName_s.getValue() != "old") {
+            if (permanentBackupSfName == null) {
+                if (temporaryBackupSfName != null && temporaryBackupSfName.getValue() != "old") {
                     output = GOOD;
                 } else {
                     output = SELECTION;
@@ -100,8 +98,8 @@ public class SfcLAMechanism {
                 output = GOOD;
             }
         } else  {
-            if (bsfName == null) {
-                if (bsfName_s == null || bsfName_s.getValue() == "old") {
+            if (permanentBackupSfName == null) {
+                if (temporaryBackupSfName == null || temporaryBackupSfName.getValue() == "old") {
                     output = GOOD;
                 } else {
                    output = DELETESF;
@@ -110,34 +108,27 @@ public class SfcLAMechanism {
                 output = GOOD;
             }
         }
-            LOG.info("SF {} is in state : {} ( CPU utilization : {}, backupSF : {}, backupSF : {}, selection threshold : {}, migration threshold :{})", sfName.getValue(), output, CPUutil.intValue(), bsfName, bsfName_s, policy1, policy2);
+            LOG.info("SF {} is in state : {} ( CPU utilization : {}, permanentBackupSf: {}, temporaryBackupSf: {}, selection threshold : {}, migration threshold :{})", sfName.getValue(), output, CPUutil.intValue(), permanentBackupSfName, temporaryBackupSfName, policy1, policy2);
 
         return output;
     }
 
 
     // selection function for backup-sf
-    public static List <SfName> selectBackupServiceFunction(ServiceFunction serviceFunction, boolean failure) {
+    public static SfName selectBackupServiceFunction(ServiceFunction serviceFunction, boolean failure) {
 
             SfName sftServiceFunctionName = null;
             SfName sfName = serviceFunction.getName();
             ServiceFunctionType serviceFunctionType = SfcProviderServiceTypeAPI.readServiceFunctionType(serviceFunction.getType());
             List<SftServiceFunctionName> sftServiceFunctionNameList = serviceFunctionType.getSftServiceFunctionName();
             LOG.info ("candidate sfs are{}", sftServiceFunctionNameList.size());
-            List <SfName> backupSfNameList = new ArrayList<>();
+            SfName temporaryBackupSfName = null;
 
-            SfcSfDescMon sfcSfDescMon1 = SfcProviderServiceFunctionAPI.readServiceFunctionDescriptionMonitor(sfName);
             java.lang.Long preCPUUtilization = java.lang.Long.MAX_VALUE;
-            if (sfcSfDescMon1 != null && failure == false) {
-                preCPUUtilization = sfcSfDescMon1.getMonitoringInfo().getResourceUtilization().getCPUUtilization();
-            }
-
-            List <java.lang.Long> CPUUtilizationList = new ArrayList<>();
 
             // TODO As part of typedef refactor not message with SFTs
             for (SftServiceFunctionName curSftServiceFunctionName : sftServiceFunctionNameList) {
                 SfName sfName_backup = new SfName(curSftServiceFunctionName.getName());
-                    LOG.info("Candidate SF {}", sfName_backup);
             /* Check next one if curSftServiceFunctionName doesn't exist */
                 ServiceFunction serviceFunction_backupsf = SfcProviderServiceFunctionAPI.readServiceFunction(new SfName (sfName_backup.getValue()));
                 if (serviceFunction_backupsf == null) {
@@ -155,43 +146,25 @@ public class SfcLAMechanism {
                     break;
                 }
 
-                java.lang.Long curCPUUtilization =
-                        sfcSfDescMon.getMonitoringInfo().getResourceUtilization().getCPUUtilization();
+                java.lang.Long curCPUUtilization = sfcSfDescMon.getMonitoringInfo().getResourceUtilization().getCPUUtilization();
 
                 if (preCPUUtilization > curCPUUtilization) {
-                    int n_backupSF = backupSfNameList.size();
-                    if (n_backupSF == 0) {
-                        backupSfNameList.add (sfName_backup);
-                        CPUUtilizationList.add(curCPUUtilization);
-                    } else {
-                        for (int k = 0 ; k < n_backupSF ; k++) {
-                            if (curCPUUtilization < CPUUtilizationList.get(k)) {
-                                backupSfNameList.add(k,sfName_backup);
-                                CPUUtilizationList.add(k,curCPUUtilization);
-                                continue;
-                            } else {
-                                if (k == n_backupSF-1) {
-                                    backupSfNameList.add(sfName_backup);
-                                    CPUUtilizationList.add(curCPUUtilization);
-                                }
-                            }
-                        }
+                    preCPUUtilization = curCPUUtilization;
+                    temporaryBackupSfName = sfName_backup;
                     }
                 }
-
-            }
 
            if (backupSfNameList.size() == 0) {
                 LOG.info("There is not available Backup SF for {}", serviceFunctionType.getType());
 
             }
 
-              LOG.info("There are {} backup SF for original SF {}", backupSfNameList.size());
-              return backupSfNameList;
+              LOG.info("There are {} backup SF for original SF", temporaryBackupSfName);
+              return temporaryBackupSfName;
     }
 }
 
-class GetPredictionDynamicThread implements Runnable {
+class GetSFDynamicOMThread implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GetPredictionDynamicThread.class);
     private int ticket = 10;
@@ -205,7 +178,7 @@ class GetPredictionDynamicThread implements Runnable {
     private static final String MIGRATION= "migration";
     private static final String DELETESF= "delete-bakcupSF";
 
-    public GetPredictionDynamicThread (String nodeName) {
+    public GetSFDynamicOMThread (String nodeName) {
         this.nodeName = nodeName;
     }
 
@@ -215,39 +188,37 @@ class GetPredictionDynamicThread implements Runnable {
             printTraceStart(LOG);
             SfName sfNodeName = new SfName(nodeName);
             ServiceFunction serviceFunction = SfcProviderServiceFunctionAPI.readServiceFunction(sfNodeName);
-            String prediction_state = SfcLAMechanism.predictionSfState(serviceFunction, policy1, policy2);
+            String prediction_state = SfcOFM.predictionSfState(serviceFunction, policy1, policy2);
             switch (prediction_state) {
                 case GOOD : {
                     break;
                 }
 
                 case SELECTION : {
-                    List <SfName> backupSfNameList = SfcLAMechanism.selectBackupServiceFunction(serviceFunction, false);
-                    SfName backupSfName = backupSfNameList.get(0);
-                    SfcLAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
+                    SfName temporaryBackupSfName = SfcOFM.selectBackupServiceFunction(serviceFunction, false);
+                    SfcOFMServiceFunctionAPI.mergeBackupSfSelection(temporaryBackupSfName, sfNodeName);
                     break;
                 }
 
                 case SELECTIONMIGRATION : {
-                    List <SfName> backupSfNameList = SfcLAMechanism.selectBackupServiceFunction(serviceFunction,false);
-                    SfName backupSfName = backupSfNameList.get(0);
-                    SfcLAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
-                    List <SfName> backupSfList = new ArrayList<>();
-                    backupSfList.add(backupSfName);
-                    SfcLAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
+                    SfName temporaryBackupSfName = SfcOFM.selectBackupServiceFunction(serviceFunction, false);
+                    SfcOFMServiceFunctionAPI.mergeBackupSfSelection(temporaryBackupSfName, sfNodeName);
+                    SfcOFMMigrationAPI.overloadPathMigration( serviceFunction, temporaryBackupSfName);
                     break;
                 }
 
                 case MIGRATION : {
-                    SfName backupSfName = SfcLAServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
-                    List <SfName> backupSfList = new ArrayList<>();
-                    backupSfList.add(backupSfName);
-                    SfcLAMigrationAPI.overloadPathMigration( serviceFunction, backupSfList);
+                    if (serviceFunction.getBackupSf() != null) {
+                        SfName  backupSfName = serviceFunction.getBackupSf();
+                    } else {
+                        SfName  backupSfName = SfcOFMServiceFunctionAPI.readBackupServiceFunction(serviceFunction.getName());
+                    }
+                        SfcOFMMigrationAPI.overloadPathMigration( serviceFunction, backupSfName);
                     break;
                 }
                 case DELETESF : {
                     SfName backupSfName = new SfName ("old");
-                    SfcLAServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
+                    SfcOFMServiceFunctionAPI.mergeBackupSfSelection(backupSfName, sfNodeName);
                 }
                 default: {
                     break;

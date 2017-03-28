@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sfc.provider.la;
+package org.opendaylight.sfc.provider.OFM;
 
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sfc.provider.api.*;
@@ -51,9 +51,9 @@ import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStop;
  *
  * @since 2017-02-04
  */
-public class SfcLARenderedPathAPI {
+public class SfcOFMRenderedPathAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcLARenderedPathAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcOFMRenderedPathAPI.class);
     private static final int MAX_STARTING_INDEX = 255;
 
     /**
@@ -66,8 +66,8 @@ public class SfcLARenderedPathAPI {
      * @param sfNameList ServiceFunctions object
      * @return RenderedServicePath Created RSP or null
      */
-    public static RenderedServicePath createFailoverRenderedServicePathAndState(ServiceFunctionPath createdServiceFunctionPath,
-            CreateRenderedPathInput createRenderedPathInput, List<SfName> sfNameList) {
+    public static RenderedServicePath createOFMRenderedServicePathAndState(ServiceFunctionPath createdServiceFunctionPath,
+            CreateRenderedPathInput createRenderedPathInput, List<SfName> sfNameList, long pathId) {
         RenderedServicePath renderedServicePath;
 
         boolean rspSuccessful = false;
@@ -76,8 +76,8 @@ public class SfcLARenderedPathAPI {
 
 
         // Create RSP
-        if ((renderedServicePath = SfcLARenderedPathAPI.createfailoverRenderedServicePathEntry(createdServiceFunctionPath,
-                createRenderedPathInput, sfNameList)) != null) {
+        if ((renderedServicePath = SfcOFMRenderedPathAPI.createOFMRenderedServicePathEntry(createdServiceFunctionPath,
+                createRenderedPathInput, sfNameList, pathId)) != null) {
             rspSuccessful = true;
 
         } else {
@@ -135,7 +135,7 @@ public class SfcLARenderedPathAPI {
      * @param serviceIndex Starting index
      * @return List of {@link RenderedServicePathHop}
      */
-    protected static List<RenderedServicePathHop> createFailoverRenderedServicePathHopList(List<SfName> serviceFunctionNameList,
+    protected static List<RenderedServicePathHop> createOFMRenderedServicePathHopList(List<SfName> serviceFunctionNameList,
             List<String> sfgNameList, int serviceIndex) {
         List<RenderedServicePathHop> renderedServicePathHopArrayList = new ArrayList<>();
         RenderedServicePathHopBuilder renderedServicePathHopBuilder = new RenderedServicePathHopBuilder();
@@ -155,7 +155,7 @@ public class SfcLARenderedPathAPI {
                     LOG.error("Could not find suitable SF in data store by name: {}", serviceFunctionName);
                     return null;
                 }
-                createFailoverSFHopBuilder(serviceIndex, renderedServicePathHopBuilder, posIndex, serviceFunctionName,
+                createOFMSFHopBuilder(serviceIndex, renderedServicePathHopBuilder, posIndex, serviceFunctionName,
                         serviceFunction);
                 renderedServicePathHopArrayList.add(posIndex, renderedServicePathHopBuilder.build());
                 serviceIndex--;
@@ -176,12 +176,11 @@ public class SfcLARenderedPathAPI {
      * @param sfNameList SfcServiceFunctionSchedulerAPI object
      * @return RenderedServicePath
      */
-    protected static RenderedServicePath createfailoverRenderedServicePathEntry(ServiceFunctionPath serviceFunctionPath,
-            CreateRenderedPathInput createRenderedPathInput, List<SfName> sfNameList) {
+    protected static RenderedServicePath createOFMRenderedServicePathEntry(ServiceFunctionPath serviceFunctionPath,
+            CreateRenderedPathInput createRenderedPathInput, List<SfName> sfNameList, long pathId) {
 
         printTraceStart(LOG);
 
-        long pathId;
         int serviceIndex;
         RenderedServicePath ret = null;
 
@@ -219,10 +218,10 @@ public class SfcLARenderedPathAPI {
             return null;
         }
         List<RenderedServicePathHop> renderedServicePathHopArrayList =
-                createFailoverRenderedServicePathHopList(sfNameList, sfgNameList, serviceIndex);
+                createOFMRenderedServicePathHopList(sfNameList, sfgNameList, serviceIndex);
 
         if (renderedServicePathHopArrayList == null) {
-            LOG.warn("createRenderedServicePathEntry createFailoverRenderedServicePathHopList returned null list");
+            LOG.warn("createRenderedServicePathEntry createOFMRenderedServicePathHopList returned null list");
             return null;
         }
 
@@ -232,17 +231,6 @@ public class SfcLARenderedPathAPI {
          * serviceFunctionPath.getPathId() :
          * numCreatedPathIncrementGet();
          */
-
-        if (serviceFunctionPath.getPathId() == null) {
-            pathId = SfcServicePathId.check_and_allocate_pathid();
-        } else {
-            pathId = SfcServicePathId.check_and_allocate_pathid(serviceFunctionPath.getPathId());
-        }
-
-        if (pathId == -1) {
-            LOG.error("{}: Failed to allocate path-id: {}", Thread.currentThread().getStackTrace()[1], pathId);
-            return null;
-        }
 
         renderedServicePathBuilder.setRenderedServicePathHop(renderedServicePathHopArrayList);
         // TODO Bug 4495 - RPCs hiding heuristics using Strings - alagalah
@@ -307,15 +295,15 @@ public class SfcLARenderedPathAPI {
         return ret;
     }
 
-    private static void createFailoverSFHopBuilder(int serviceIndex,
+    private static void createOFMSFHopBuilder(int serviceIndex,
             RenderedServicePathHopBuilder renderedServicePathHopBuilder, short posIndex, SfName serviceFunctionName,
             ServiceFunction serviceFunction) {
-        createFailoverHopBuilderInternal(serviceIndex, renderedServicePathHopBuilder, posIndex, serviceFunction);
+        createOFMHopBuilderInternal(serviceIndex, renderedServicePathHopBuilder, posIndex, serviceFunction);
         renderedServicePathHopBuilder.setServiceFunctionName(serviceFunctionName);
     }
 
 
-    private static void createFailoverHopBuilderInternal(int serviceIndex,
+    private static void createOFMHopBuilderInternal(int serviceIndex,
             RenderedServicePathHopBuilder renderedServicePathHopBuilder, short posIndex,
             ServiceFunction serviceFunction) {
         SffName serviceFunctionForwarderName =

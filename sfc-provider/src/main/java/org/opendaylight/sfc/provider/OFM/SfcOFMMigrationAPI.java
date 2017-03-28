@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sfc.provider.la;
+package org.opendaylight.sfc.provider.OFM;
 
 //import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sfc.provider.api.*;
@@ -39,17 +39,16 @@ import java.util.List;
 /**
  * Created by BOO on 2017-02-08.
  */
-public class SfcLAMigrationAPI {
+public class SfcOFMMigrationAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcLAMigrationAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcOFMMigrationAPI.class);
 
     //TODO we should defince migration modules witch one is for failure and other is for overload
-    public static void failurePathMigration(ServiceFunction serviceFunction, List <SfName> backupSfNameList) {
+    public static void failurePathMigration(ServiceFunction serviceFunction, SfName backupSfName) {
 
         List <RspName> RspList = new ArrayList<>();
         List <RenderedServicePath> renderedServicePathList = new ArrayList<>();
         List <SfName> sfNameList = new ArrayList<>();
-        int n_bakupSf = backupSfNameList.size();
         boolean ret = false;
 
         // Read all RSPs which are allocated into failure service function
@@ -68,11 +67,11 @@ public class SfcLAMigrationAPI {
             for (SfServicePath sFPath : sfServicePathList) {
                 //TODO : Modify to loadbalancing
 
-                SfName backupSfName = backupSfNameList.get(0);
                 RspName rspName = new RspName (sFPath.getName().getValue());
                 LOG.info("The RSP {} which is allocated to SFP {} should be migrated to new RSP", rspName, sFPath.getName());
 
                 RenderedServicePath renderedServicePath =SfcProviderRenderedPathAPI.readRenderedServicePath(new RspName (rspName.getValue()));
+                long pathId = renderedServicePath.getPathId();
                 List<RenderedServicePathHop> renderedServicePathHopList = renderedServicePath.getRenderedServicePathHop();
                 // Create new RSP instance
                 sfNameList = new ArrayList<>();
@@ -109,13 +108,13 @@ public class SfcLAMigrationAPI {
                 createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
                 CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
                 ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
-                renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
+                renderedServicePathList.add(SfcOFMRenderedPathAPI.createOFMRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList, pathId));
             }
 
         }
     }
 
-    public static void overloadPathMigration(ServiceFunction serviceFunction, List <SfName> backupSfNameList) {
+    public static void overloadPathMigration(ServiceFunction serviceFunction, SfName backupSfName) {
 
          SfName oldSfName = serviceFunction.getName();
          List <SfServicePath> sfServicePathList_all = SfcProviderServiceFunctionAPI.readServiceFunctionState(oldSfName);
@@ -142,6 +141,7 @@ public class SfcLAMigrationAPI {
                  LOG.info(" The RSP {} is allocated to SFP {}", rspName, sFPath.getName());
 
                  RenderedServicePath renderedServicePath =SfcProviderRenderedPathAPI.readRenderedServicePath(new RspName (rspName.getValue()));
+                 long pathId = renderedServicePath.getPathId();
                  List<RenderedServicePathHop> renderedServicePathHopList = renderedServicePath.getRenderedServicePathHop();
                  sfNameList = new ArrayList<>();
 
@@ -178,7 +178,7 @@ public class SfcLAMigrationAPI {
                  createRenderedPathInputBuilder.setName(rspName.getValue()).setParentServiceFunctionPath(renderedServicePath.getParentServiceFunctionPath().getValue());
                  CreateRenderedPathInput createRenderedPathInput = createRenderedPathInputBuilder.build();
                  ServiceFunctionPath serviceFunctionPath = SfcProviderServicePathAPI.readServiceFunctionPath(new SfpName (renderedServicePath.getParentServiceFunctionPath().getValue()));
-                 renderedServicePathList.add(SfcLARenderedPathAPI.createFailoverRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList));
+                 renderedServicePathList.add(SfcOFMRenderedPathAPI.createOFMRenderedServicePathAndState (serviceFunctionPath, createRenderedPathInput , sfNameList, pathId));
              }
          }
 

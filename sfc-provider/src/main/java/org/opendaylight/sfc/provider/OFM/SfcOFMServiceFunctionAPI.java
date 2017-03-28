@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sfc.provider.la;
+package org.opendaylight.sfc.provider.OFM;
 
 import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStart;
 import static org.opendaylight.sfc.provider.SfcProviderDebug.printTraceStop;
@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
  */
 
 
-public class SfcLAServiceFunctionAPI {
+public class SfcOFMServiceFunctionAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcLAServiceFunctionAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcOFMServiceFunctionAPI.class);
 
     public static boolean mergeBackupSfSelection(SfName backupsfName, SfName sfName) {
 
@@ -70,6 +70,5 @@ public class SfcLAServiceFunctionAPI {
         printTraceStop(LOG);
         return ret;
     }
-// TODO should define method which deletes backupSFname in DB
 
 }

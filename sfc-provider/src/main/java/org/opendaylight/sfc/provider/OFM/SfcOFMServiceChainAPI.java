@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.sfc.provider.la;
+package org.opendaylight.sfc.provider.OFM;
 
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.sfc.provider.api.*;
@@ -38,9 +38,9 @@ import java.util.List;
  *
  * @author Jaewook Lee (iioiioiio12345@gmail.com)
  */
-public class SfcLAServiceChainAPI {
+public class SfcOFMServiceChainAPI {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SfcLAServiceChainAPI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SfcOFMServiceChainAPI.class);
     //delete sfp
     public static boolean  deleteSFPtoServiceFunctionChainState(SfcName sfcName) {
         boolean ret = false;
