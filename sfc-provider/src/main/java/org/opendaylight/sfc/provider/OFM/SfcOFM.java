@@ -107,7 +107,6 @@ public class SfcOFM {
                 output = GOOD;
             }
         }
-            LOG.info("SF {} is in state : {} ( CPU utilization : {}, permanentBackupSf: {}, temporaryBackupSf: {}, selection threshold : {}, migration threshold :{})", sfName.getValue(), output, CPUutil.intValue(), permanentBackupSfName, temporaryBackupSfName, policy1, policy2);
 
         return output;
     }
@@ -128,6 +127,11 @@ public class SfcOFM {
             // TODO As part of typedef refactor not message with SFTs
             for (SftServiceFunctionName curSftServiceFunctionName : sftServiceFunctionNameList) {
                 SfName sfName_backup = new SfName(curSftServiceFunctionName.getName());
+                if (sfName_backup.getValue() == sfName.getValue()) {
+                   if (failure == true) {
+                      continue;
+                    }
+                }
             /* Check next one if curSftServiceFunctionName doesn't exist */
                 ServiceFunction serviceFunction_backupsf = SfcProviderServiceFunctionAPI.readServiceFunction(new SfName (sfName_backup.getValue()));
                 if (serviceFunction_backupsf == null) {

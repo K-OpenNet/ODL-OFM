@@ -29,13 +29,11 @@ import org.opendaylight.sfc.provider.OpendaylightSfc;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceForwarderAPI;
 import org.opendaylight.sfc.provider.api.SfcProviderServiceFunctionAPI;
 import org.opendaylight.sfc.provider.OFM.SfcOFM;
-//import org.opendaylight.sfc.provider.api.SfcProviderServiceTypeAPI;
 import org.opendaylight.sfc.sfc_netconf.provider.api.SfcNetconfServiceForwarderAPI;
 import org.opendaylight.sfc.sfc_netconf.provider.api.SfcNetconfServiceFunctionAPI;
 import org.opendaylight.sfc.sfc_netconf.provider.api.SfcProviderSfDescriptionMonitorAPI;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SfName;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SffName;
-//import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SftTypeName;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.common.rev151017.SftType;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sf.rev140701.service.functions.ServiceFunction;
 import org.opendaylight.yang.gen.v1.urn.cisco.params.xml.ns.yang.sfc.sff.rev140701.service.function.forwarders.ServiceFunctionForwarder;
@@ -261,6 +259,7 @@ class GetSfDescriptionMonitoringInfoDynamicThread implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(GetSfDescriptionMonitoringInfoDynamicThread.class);
     private int ticket = 10;
     private String nodeName;
+    private boolean stopped = true;
 
     public GetSfDescriptionMonitoringInfoDynamicThread(String nodeName) {
         this.nodeName = nodeName;
@@ -268,15 +267,17 @@ class GetSfDescriptionMonitoringInfoDynamicThread implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (stopped) {
             printTraceStart(LOG);
             MonitoringInfo monInfo = SfcNetconfServiceFunctionAPI.getServiceFunctionMonitor(nodeName);
             if (monInfo != null) {
+                stopped = true;
                 SfName sfNodeName = new SfName(nodeName);
                 SfcNetconfServiceFunctionAPI.putServiceFunctionMonitor(monInfo, sfNodeName);
             } else {
                 SfName sfNodeName = new SfName(nodeName);
                 SfcOFM.SfcFailureManagement(sfNodeName);
+                stopped = false;
             }
             try {
                 Thread.sleep(5000);
