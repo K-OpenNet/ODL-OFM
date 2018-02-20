@@ -53,4 +53,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     h.vm.host_name = "classifier2"
     h.vm.network :private_network, ip: "192.168.1.60"
   end
+  config.vm.define "sf3" do | h |
+    h.vm.host_name = "sf3"
+    h.vm.network :private_network, ip: "192.168.1.70"
+  end
+
+  config.vm.define "sff3" do | h |
+    h.vm.host_name = "sff3"
+    h.vm.network :private_network, ip: "192.168.1.80"
+  end
+
+  config.vm.define "classifier3" do | h |
+    h.vm.host_name = "classifier3"
+    h.vm.network :private_network, ip: "192.168.1.90"
+  end
 end
