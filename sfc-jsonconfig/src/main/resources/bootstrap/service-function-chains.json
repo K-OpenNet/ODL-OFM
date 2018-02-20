@@ -36,6 +36,21 @@
           }
         ]
       }
+      {
+        "name": "SFC3",
+        "sfc-service-function": [
+          {
+            "name": "firewall-abstract3",
+            "type": "service-function-type:firewall",
+            "order" : 0
+          },
+          {
+            "name": "dpi-abstract3",
+            "type": "service-function-type:dpi",
+            "order" : 1
+          }
+        ]
+      }
     ]
   }
 }
